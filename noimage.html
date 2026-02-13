@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Runner Fix</title>
+<style>
+body {
+  margin:0;
+  overflow:hidden;
+  background:#111;
+  font-family:Arial;
+}
+
+#game {
+  position:relative;
+  width:100vw;
+  height:100vh;
+  overflow:hidden;
+}
+
+#ground {
+  position:absolute;
+  bottom:0;
+  width:100%;
+  height:80px;
+  background:#333;
+}
+
+#player {
+  position:absolute;
+  width:48px;
+  height:80px;
+  background:#00ffcc;
+  bottom:80px;
+  left:100px;
+}
+
+#villain {
+  position:absolute;
+  width:60px;
+  height:80px;
+  background:red;
+  bottom:80px;
+  left:-200px;
+}
+
+.obstacle {
+  position:absolute;
+  width:50px;
+  height:50px;
+  background:orange;
+  bottom:80px;
+}
+
+#ui {
+  position:absolute;
+  top:10px;
+  left:10px;
+  color:white;
+  font-size:18px;
+}
+</style>
+</head>
+<body>
+
+<div id="game">
+  <div id="ground"></div>
+  <div id="player"></div>
+  <div id="villain"></div>
+  <div id="ui">Health: 3</div>
+</div>
+
+<script>
+const player = document.getElementById("player");
+const villain = document.getElementById("villain");
+const ui = document.getElementById("ui");
+const game = document.getElementById("game");
+
+let keys = {};
+let gravity = 0.8;
+let velocityY = 0;
+let isJumping = false;
+
+let playerX = 100;
+let playerY = 0;
+
+let villainX = -200;
+let villainSpeed = 2;
+
+let obstacles = [];
+let health = 3;
+let invincible = false;
+
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+function spawnObstacle() {
+  const obs = document.createElement("div");
+  obs.className = "obstacle";
+  obs.style.left = window.innerWidth + "px";
+  game.appendChild(obs);
+
+  obstacles.push({
+    el: obs,
+    x: window.innerWidth,
+    width: 50,
+    height: 50
+  });
+}
+
+setInterval(spawnObstacle, 2000);
+
+function takeDamage() {
+  if (invincible) return;
+
+  health--;
+  ui.innerText = "Health: " + health;
+
+  invincible = true;
+  player.style.opacity = "0.5";
+
+  setTimeout(() => {
+    invincible = false;
+    player.style.opacity = "1";
+  }, 1000);
+
+  if (health <= 0) {
+    alert("Game Over");
+    location.reload();
+  }
+}
+
+function checkCollision(rect1, rect2) {
+  return (
+    rect1.left < rect2.right &&
+    rect1.right > rect2.left &&
+    rect1.top > rect2.bottom &&
+    rect1.bottom < rect2.top
+  );
+}
+
+function gameLoop() {
+  // MOVEMENT
+  if (keys["ArrowRight"]) playerX += 5;
+  if (keys["ArrowLeft"]) playerX -= 5;
+
+  if (keys[" "] && !isJumping) {
+    velocityY = 15;
+    isJumping = true;
+  }
+
+  // GRAVITY
+  velocityY -= gravity;
+  playerY += velocityY;
+
+  if (playerY <= 0) {
+    playerY = 0;
+    velocityY = 0;
+    isJumping = false;
+  }
+
+  player.style.left = playerX + "px";
+  player.style.bottom = 80 + playerY + "px";
+
+  // VILLAIN MOVEMENT
+  villainX += villainSpeed;
+  villain.style.left = villainX + "px";
+
+  // OBSTACLE MOVEMENT
+  obstacles.forEach((obs, i) => {
+    obs.x -= 5;
+    obs.el.style.left = obs.x + "px";
+
+    if (obs.x < -100) {
+      obs.el.remove();
+      obstacles.splice(i, 1);
+    }
+  });
+
+  // PLAYER RECT
+  const playerRect = {
+    left: playerX,
+    right: playerX + 48,
+    bottom: 80 + playerY,
+    top: 80 + playerY + 80
+  };
+
+  // CHECK OBSTACLE COLLISIONS
+  obstacles.forEach(obs => {
+    const obsRect = {
+      left: obs.x,
+      right: obs.x + obs.width,
+      bottom: 80,
+      top: 80 + obs.height
+    };
+
+    if (checkCollision(playerRect, obsRect)) {
+      takeDamage();
+    }
+  });
+
+  // CHECK VILLAIN COLLISION
+  const villainRect = {
+    left: villainX,
+    right: villainX + 60,
+    bottom: 80,
+    top: 160
+  };
+
+  if (checkCollision(playerRect, villainRect)) {
+    takeDamage();
+    villainX = -200; // push back so no spam hit
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Horror Escape: Final Nightmare</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Creepster&family=Special+Elite&display=swap');
+    
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    
+    .game-wrapper {
+      height: 100%;
+      width: 100%;
+      background: #0a0a0a;
+    }
+    
+    .horror-title {
+      font-family: 'Creepster', cursive;
+      text-shadow: 0 0 20px #ff0000, 0 0 40px #880000;
+    }
+    
+    .story-text {
+      font-family: 'Special Elite', cursive;
+    }
+    
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+      25%, 75% { opacity: 0.9; }
+    }
+    
+    @keyframes pulse-red {
+      0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.3); }
+      50% { box-shadow: 0 0 40px rgba(255, 0, 0, 0.6); }
+    }
+    
+    @keyframes fog-drift {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    
+    .fog-layer {
+      animation: fog-drift 20s linear infinite;
+    }
+    
+    @keyframes villain-chase {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+    
+    .villain-sprite {
+      animation: villain-chase 0.3s ease-in-out infinite;
+    }
+    
+    @keyframes blood-drip {
+      0% { height: 0; }
+      100% { height: 100px; }
+    }
+    
+    .chapter-overlay {
+      animation: flicker 0.1s ease-in-out infinite;
+    }
+    
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      14% { transform: scale(1.1); }
+      28% { transform: scale(1); }
+      42% { transform: scale(1.1); }
+    }
+    
+    .heartbeat {
+      animation: heartbeat 1s ease-in-out infinite;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .fade-in {
+      animation: fadeIn 1s ease-out;
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .slide-up {
+      animation: slideUp 0.5s ease-out;
+    }
+    
+    .parallax-bg {
+      position: absolute;
+      width: 200%;
+      height: 100%;
+    }
+    
+    .ground {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 80px;
+    }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <div class="game-wrapper relative overflow-hidden" id="gameContainer"><!-- Main Menu -->
+   <div id="mainMenu" class="absolute inset-0 flex flex-col items-center justify-center z-50 bg-gradient-to-b from-black via-gray-900 to-black">
+    <div class="absolute inset-0 overflow-hidden opacity-30">
+     <div class="fog-layer absolute inset-0 bg-gradient-to-r from-transparent via-gray-500 to-transparent w-[200%] h-full"></div>
+    </div>
+    <h1 id="gameTitle" class="horror-title text-6xl md:text-8xl text-red-600 mb-4 text-center px-4">Horror Escape</h1>
+    <h2 class="horror-title text-3xl md:text-5xl text-red-500 mb-12 chapter-overlay">Final Nightmare</h2>
+    <div class="flex flex-col gap-4 z-10"><button id="startBtn" class="px-12 py-4 bg-red-800 hover:bg-red-600 text-white text-2xl story-text rounded-lg transition-all duration-300 pulse-red border-2 border-red-500"> 🎮 START GAME </button> <button id="controlsBtn" class="px-12 py-4 bg-gray-800 hover:bg-gray-600 text-white text-xl story-text rounded-lg transition-all duration-300 border-2 border-gray-500"> 📖 CONTROLS </button>
+    </div>
+    <div class="absolute bottom-8 text-gray-500 story-text text-sm">
+     Press ENTER to start
+    </div>
+   </div><!-- Controls Modal -->
+   <div id="controlsModal" class="hidden absolute inset-0 flex items-center justify-center z-50 bg-black bg-opacity-90">
+    <div class="bg-gray-900 p-8 rounded-xl border-2 border-red-600 max-w-md">
+     <h3 class="horror-title text-3xl text-red-500 mb-6 text-center">CONTROLS</h3>
+     <div class="story-text text-gray-300 space-y-3">
+      <p>⬅️ ➡️ <span class="text-white">Arrow Keys</span> - Move</p>
+      <p>⬆️ <span class="text-white">Up Arrow</span> - Jump</p>
+      <p>⬆️⬆️ <span class="text-white">Double Tap</span> - Double Jump</p>
+      <p>⬇️ <span class="text-white">Down Arrow</span> - Slide</p>
+      <p>⇧ <span class="text-white">SHIFT</span> - Sprint</p>
+      <p>🚗 <span class="text-white">Driving</span> - Left/Right to steer</p>
+     </div><button id="closeControls" class="mt-6 w-full py-3 bg-red-800 hover:bg-red-600 text-white story-text rounded-lg"> CLOSE </button>
+    </div>
+   </div><!-- Chapter Overlay -->
+   <div id="chapterOverlay" class="hidden absolute inset-0 flex flex-col items-center justify-center z-40 bg-black">
+    <div class="text-center fade-in">
+     <p class="story-text text-red-500 text-xl mb-4" id="chapterNum">CHAPTER 1</p>
+     <h2 class="horror-title text-5xl md:text-7xl text-red-600 mb-6" id="chapterTitle">Camp Crystal Lake</h2>
+     <p class="story-text text-gray-400 text-lg max-w-lg px-4" id="chapterDesc">The night is dark. Something lurks in the forest...</p>
+    </div>
+   </div><!-- Game Canvas -->
+   <div id="gameCanvas" class="hidden absolute inset-0"><!-- Sky/Background Layer -->
+    <div id="bgLayer" class="absolute inset-0"></div><!-- Fog Effect -->
+    <div class="absolute inset-0 pointer-events-none overflow-hidden">
+     <div class="fog-layer absolute inset-0 bg-gradient-to-r from-transparent via-gray-700 to-transparent w-[200%] h-full opacity-20"></div>
+    </div><!-- Game World -->
+    <div id="gameWorld" class="absolute inset-0"><!-- Ground -->
+     <div id="ground" class="ground"></div><!-- Obstacles Container -->
+     <div id="obstacles" class="absolute inset-0"></div><!-- Player -->
+     <div id="player" class="absolute transition-transform duration-100" style="bottom: 80px; left: 100px;">
+      <div class="relative"><!-- Player Body -->
+       <div class="w-12 h-16 bg-blue-800 rounded-t-lg relative"><!-- Head -->
+        <div class="absolute -top-8 left-1 w-10 h-10 bg-amber-200 rounded-full"><!-- Eyes -->
+         <div class="absolute top-3 left-2 w-2 h-2 bg-black rounded-full"></div>
+         <div class="absolute top-3 right-2 w-2 h-2 bg-black rounded-full"></div><!-- Hair -->
+         <div class="absolute -top-1 left-0 w-10 h-4 bg-amber-900 rounded-t-full"></div>
+        </div><!-- Arms -->
+        <div id="playerArms" class="absolute top-2 -left-2 w-4 h-8 bg-amber-200 rounded"></div>
+        <div class="absolute top-2 -right-2 w-4 h-8 bg-amber-200 rounded"></div>
+       </div><!-- Legs -->
+       <div id="playerLegs" class="flex gap-1">
+        <div class="w-5 h-8 bg-gray-800 rounded-b"></div>
+        <div class="w-5 h-8 bg-gray-800 rounded-b"></div>
+       </div>
+      </div>
+     </div><!-- Villain -->
+     <div id="villain" class="absolute villain-sprite" style="bottom: 80px; left: -100px;"></div><!-- Car (for driving chapters) -->
+     <div id="car" class="hidden absolute" style="bottom: 80px; left: 100px;">
+      <div class="relative">
+       <div class="w-32 h-16 bg-gray-700 rounded-lg"><!-- Car body -->
+        <div class="absolute top-0 left-4 w-24 h-10 bg-gray-600 rounded-t-lg"></div><!-- Windows -->
+        <div class="absolute top-1 left-6 w-8 h-7 bg-blue-900 rounded"></div>
+        <div class="absolute top-1 right-6 w-8 h-7 bg-blue-900 rounded"></div><!-- Headlights -->
+        <div class="absolute top-6 left-0 w-3 h-3 bg-yellow-300 rounded-full" style="box-shadow: 0 0 10px yellow;"></div>
+        <div class="absolute top-6 right-0 w-3 h-3 bg-red-500 rounded-full"></div><!-- Wheels -->
+        <div class="absolute -bottom-3 left-4 w-8 h-8 bg-black rounded-full border-4 border-gray-500"></div>
+        <div class="absolute -bottom-3 right-4 w-8 h-8 bg-black rounded-full border-4 border-gray-500"></div>
+       </div>
+      </div>
+     </div>
+    </div><!-- HUD -->
+    <div class="absolute top-4 left-4 right-4 flex justify-between items-start z-20"><!-- Health -->
+     <div class="flex items-center gap-2 bg-black bg-opacity-70 px-4 py-2 rounded-lg"><span class="text-white story-text">LIVES:</span>
+      <div id="healthHearts" class="flex gap-1"><span class="text-red-500 text-2xl heartbeat">❤️</span> <span class="text-red-500 text-2xl heartbeat">❤️</span> <span class="text-red-500 text-2xl heartbeat">❤️</span>
+      </div>
+     </div><!-- Distance/Progress -->
+     <div class="bg-black bg-opacity-70 px-4 py-2 rounded-lg"><span class="text-white story-text">DISTANCE: <span id="distanceMeter" class="text-red-400">0</span>m</span>
+     </div><!-- Chapter Info -->
+     <div class="bg-black bg-opacity-70 px-4 py-2 rounded-lg text-right">
+      <p class="text-red-500 story-text text-sm" id="hudChapter">Chapter 1</p>
+      <p class="text-white story-text text-xs" id="hudObjective">Reach the car!</p>
+     </div>
+    </div><!-- Sprint Bar -->
+    <div class="absolute bottom-4 left-4 bg-black bg-opacity-70 px-3 py-2 rounded-lg">
+     <div class="text-white story-text text-xs mb-1">
+      SPRINT
+     </div>
+     <div class="w-32 h-3 bg-gray-700 rounded-full overflow-hidden">
+      <div id="sprintBar" class="h-full bg-yellow-500 transition-all duration-100" style="width: 100%;"></div>
+     </div>
+    </div><!-- Jump Counter -->
+    <div class="absolute bottom-4 right-4 bg-black bg-opacity-70 px-3 py-2 rounded-lg">
+     <div class="text-white story-text text-xs">
+      JUMPS: <span id="jumpCounter" class="text-green-400">2</span>/2
+     </div>
+    </div>
+   </div><!-- Cutscene Overlay -->
+   <div id="cutscene" class="hidden absolute inset-0 flex items-center justify-center z-30 bg-black">
+    <div class="text-center max-w-2xl px-8">
+     <p id="cutsceneText" class="story-text text-gray-300 text-xl leading-relaxed"></p>
+    </div>
+   </div><!-- Game Over Screen -->
+   <div id="gameOver" class="hidden absolute inset-0 flex flex-col items-center justify-center z-50 bg-black bg-opacity-95">
+    <h2 class="horror-title text-6xl text-red-600 mb-4 chapter-overlay">GAME OVER</h2>
+    <p class="story-text text-gray-400 text-xl mb-8">You couldn't escape the nightmare...</p>
+    <div class="flex gap-4"><button id="retryBtn" class="px-8 py-3 bg-red-800 hover:bg-red-600 text-white text-xl story-text rounded-lg transition-all"> 🔄 RETRY </button> <button id="menuBtn" class="px-8 py-3 bg-gray-800 hover:bg-gray-600 text-white text-xl story-text rounded-lg transition-all"> 🏠 MENU </button>
+    </div>
+   </div><!-- Victory Screen -->
+   <div id="victory" class="hidden absolute inset-0 flex flex-col items-center justify-center z-50 bg-gradient-to-b from-black via-gray-900 to-black">
+    <div class="text-center fade-in">
+     <h2 class="horror-title text-6xl text-green-500 mb-4">ESCAPED!</h2>
+     <p class="story-text text-gray-300 text-xl mb-2">You made it to the airport...</p>
+     <p class="story-text text-gray-500 text-lg mb-8">The nightmare is over... for now.</p>
+     <div class="text-8xl mb-8">
+      ✈️
+     </div><button id="playAgainBtn" class="px-8 py-3 bg-green-800 hover:bg-green-600 text-white text-xl story-text rounded-lg transition-all"> 🎮 PLAY AGAIN </button>
+    </div>
+   </div>
+  </div>
+  <script>
+    // Game Configuration
+    const defaultConfig = {
+      game_title: 'Horror Escape'
+    };
+    
+    // SDK Initialization
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange: async (config) => {
+          const titleEl = document.getElementById('gameTitle');
+          if (titleEl) {
+            titleEl.textContent = config.game_title || defaultConfig.game_title;
+          }
+        },
+        mapToCapabilities: (config) => ({
+          recolorables: [],
+          borderables: [],
+          fontEditable: undefined,
+          fontSizeable: undefined
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ['game_title', config.game_title || defaultConfig.game_title]
+        ])
+      });
+    }
+
+    // Game State
+    const gameState = {
+      currentChapter: 0,
+      health: 3,
+      distance: 0,
+      isPlaying: false,
+      isPaused: false,
+      isDriving: false,
+      
+      // Player state
+      playerX: 100,
+      playerY: 0,
+      velocityY: 0,
+      isJumping: false,
+      jumpCount: 0,
+      maxJumps: 2,
+      isSliding: false,
+      isSprinting: false,
+      sprintEnergy: 100,
+      facingRight: true,
+      
+      // Villain state
+      villainX: -100,
+      villainSpeed: 2,
+      
+      // Game mechanics
+      gameSpeed: 5,
+      gravity: 0.8,
+      jumpForce: -15,
+      obstacles: [],
+      targetDistance: 500,
+      
+      // Keys
+      keys: {
+        left: false,
+        right: false,
+        up: false,
+        down: false,
+        shift: false
+      }
+    };
+
+    // Chapter Data
+    const chapters = [
+      {
+        num: 1,
+        title: 'Camp Crystal Lake',
+        desc: 'The night is dark. A masked killer stalks the forest. RUN!',
+        objective: 'Reach the car!',
+        targetDistance: 500,
+        villainSpeed: 2.5,
+        bgStyle: 'linear-gradient(to bottom, #0a0a0a 0%, #1a0a0a 50%, #0a1a0a 100%)',
+        groundStyle: 'linear-gradient(to bottom, #1a3a1a, #0a2a0a)',
+        villain: 'jason',
+        obstacles: ['log', 'trap', 'rock']
+      },
+      {
+        num: 2,
+        title: 'Revenge',
+        desc: 'You found the car! Time to get revenge...',
+        objective: 'Run over the killer!',
+        targetDistance: 300,
+        villainSpeed: 0,
+        bgStyle: 'linear-gradient(to bottom, #0a0a15 0%, #1a1a2a 100%)',
+        groundStyle: 'linear-gradient(to bottom, #2a2a2a, #1a1a1a)',
+        villain: 'jason',
+        isDriving: true,
+        obstacles: []
+      },
+      {
+        num: 3,
+        title: 'Home Arrival',
+        desc: 'Finally home... safe at last... or so you thought.',
+        objective: 'Enter your house',
+        targetDistance: 200,
+        villainSpeed: 0,
+        bgStyle: 'linear-gradient(to bottom, #0a0a15 0%, #15151f 100%)',
+        groundStyle: 'linear-gradient(to bottom, #3a3a3a, #2a2a2a)',
+        villain: 'pennywise',
+        cutsceneAfter: true,
+        obstacles: ['mailbox', 'fence']
+      },
+      {
+        num: 4,
+        title: 'The Sewers',
+        desc: 'You wake up in darkness. Water drips. Something laughs...',
+        objective: 'Escape the sewer!',
+        targetDistance: 600,
+        villainSpeed: 3,
+        bgStyle: 'linear-gradient(to bottom, #0a0f0a 0%, #050a05 100%)',
+        groundStyle: 'linear-gradient(to bottom, #1a2a1a, #0a1a0a)',
+        villain: 'pennywise',
+        obstacles: ['pipe', 'water', 'debris']
+      },
+      {
+        num: 5,
+        title: 'Bedroom Terror',
+        desc: 'Home again. Just need to sleep... What was that sound?',
+        objective: 'Escape through the back door!',
+        targetDistance: 400,
+        villainSpeed: 3.5,
+        bgStyle: 'linear-gradient(to bottom, #15101a 0%, #0a0510 100%)',
+        groundStyle: 'linear-gradient(to bottom, #4a3a3a, #3a2a2a)',
+        villain: 'ghostface',
+        obstacles: ['furniture', 'door', 'glass']
+      },
+      {
+        num: 6,
+        title: 'The Cabin',
+        desc: 'A cabin in the woods. Surely safe here... "Welcome to my nightmare..."',
+        objective: 'ESCAPE!',
+        targetDistance: 450,
+        villainSpeed: 4,
+        bgStyle: 'linear-gradient(to bottom, #1a0a0a 0%, #0a0505 100%)',
+        groundStyle: 'linear-gradient(to bottom, #3a2a1a, #2a1a0a)',
+        villain: 'freddy',
+        obstacles: ['fire', 'claw', 'dream']
+      },
+      {
+        num: 7,
+        title: 'Final Escape',
+        desc: 'The airport! Freedom awaits! Don\'t fall asleep!',
+        objective: 'Reach the airport!',
+        targetDistance: 800,
+        villainSpeed: 4.5,
+        bgStyle: 'linear-gradient(to bottom, #1a1520 0%, #0a0a15 100%)',
+        groundStyle: 'linear-gradient(to bottom, #3a3a3a, #2a2a2a)',
+        villain: 'freddy',
+        isDriving: true,
+        obstacles: ['car', 'barrier'],
+        isFinal: true
+      }
+    ];
+
+    // Villain Sprites
+    const villainSprites = {
+      jason: `
+        <div class="relative">
+          <div class="w-14 h-20 bg-gray-800 rounded-t relative">
+            <div class="absolute -top-10 left-1 w-12 h-12 bg-gray-200 rounded">
+              <div class="absolute top-2 left-1 w-10 h-8 bg-white rounded border-2 border-gray-400">
+                <div class="absolute top-1 left-1 w-2 h-4 bg-black rounded-sm"></div>
+                <div class="absolute top-1 right-1 w-2 h-4 bg-black rounded-sm"></div>
+                <div class="absolute bottom-1 left-3 w-4 h-1 bg-red-600"></div>
+              </div>
+            </div>
+            <div class="absolute top-2 -right-6 w-6 h-20 bg-gray-600 transform rotate-12"></div>
+          </div>
+          <div class="flex gap-1">
+            <div class="w-6 h-10 bg-gray-700 rounded-b"></div>
+            <div class="w-6 h-10 bg-gray-700 rounded-b"></div>
+          </div>
+        </div>
+      `,
+      pennywise: `
+        <div class="relative">
+          <div class="w-16 h-24 bg-gray-100 rounded-t relative">
+            <div class="absolute -top-12 left-0 w-16 h-14 bg-white rounded-full">
+              <div class="absolute -top-4 left-0 w-16 h-8 bg-red-600 rounded-full"></div>
+              <div class="absolute top-3 left-2 w-4 h-4 bg-yellow-300 rounded-full">
+                <div class="w-2 h-2 bg-black rounded-full m-1"></div>
+              </div>
+              <div class="absolute top-3 right-2 w-4 h-4 bg-yellow-300 rounded-full">
+                <div class="w-2 h-2 bg-black rounded-full m-1"></div>
+              </div>
+              <div class="absolute bottom-2 left-4 w-8 h-4 bg-red-700 rounded-full"></div>
+            </div>
+            <div class="absolute top-0 left-2 w-12 h-4 bg-red-500 rounded"></div>
+          </div>
+          <div class="flex gap-1">
+            <div class="w-7 h-8 bg-gray-100 rounded-b"></div>
+            <div class="w-7 h-8 bg-gray-100 rounded-b"></div>
+          </div>
+        </div>
+      `,
+      ghostface: `
+        <div class="relative">
+          <div class="w-14 h-20 bg-black rounded-t relative">
+            <div class="absolute -top-12 left-0 w-14 h-14 bg-white rounded-lg" style="mask: radial-gradient(ellipse at center, white 60%, transparent 61%);">
+              <div class="absolute top-2 left-2 w-4 h-6 bg-black rounded-full transform -rotate-12"></div>
+              <div class="absolute top-2 right-2 w-4 h-6 bg-black rounded-full transform rotate-12"></div>
+              <div class="absolute bottom-1 left-4 w-6 h-4 bg-black rounded-full"></div>
+            </div>
+            <div class="absolute top-0 -left-4 w-4 h-16 bg-gray-300 rounded transform -rotate-12"></div>
+          </div>
+          <div class="flex gap-1">
+            <div class="w-6 h-10 bg-black rounded-b"></div>
+            <div class="w-6 h-10 bg-black rounded-b"></div>
+          </div>
+        </div>
+      `,
+      freddy: `
+        <div class="relative">
+          <div class="w-14 h-20 bg-red-900 relative" style="background: repeating-linear-gradient(90deg, #7f1d1d, #7f1d1d 6px, #1a1a0a 6px, #1a1a0a 12px);">
+            <div class="absolute -top-10 left-1 w-12 h-12 bg-red-800 rounded">
+              <div class="absolute inset-1 bg-red-900 rounded" style="background: radial-gradient(circle at 30% 30%, #991b1b 20%, #7f1d1d 80%);"></div>
+              <div class="absolute top-3 left-1 w-3 h-2 bg-black rounded"></div>
+              <div class="absolute top-3 right-2 w-3 h-2 bg-black rounded"></div>
+              <div class="absolute bottom-2 left-3 w-6 h-2 bg-red-600 rounded"></div>
+              <div class="absolute -top-2 left-2 w-8 h-4 bg-amber-900 rounded-t"></div>
+            </div>
+            <div class="absolute top-2 -right-8 flex">
+              <div class="w-1 h-12 bg-gray-400 mx-0.5" style="box-shadow: 2px 0 4px rgba(255,255,255,0.3);"></div>
+              <div class="w-1 h-14 bg-gray-400 mx-0.5"></div>
+              <div class="w-1 h-12 bg-gray-400 mx-0.5"></div>
+              <div class="w-1 h-10 bg-gray-400 mx-0.5"></div>
+            </div>
+          </div>
+          <div class="flex gap-1">
+            <div class="w-6 h-10 bg-gray-800 rounded-b"></div>
+            <div class="w-6 h-10 bg-gray-800 rounded-b"></div>
+          </div>
+        </div>
+      `
+    };
+
+    // DOM Elements
+    const elements = {
+      mainMenu: document.getElementById('mainMenu'),
+      controlsModal: document.getElementById('controlsModal'),
+      chapterOverlay: document.getElementById('chapterOverlay'),
+      gameCanvas: document.getElementById('gameCanvas'),
+      cutscene: document.getElementById('cutscene'),
+      gameOver: document.getElementById('gameOver'),
+      victory: document.getElementById('victory'),
+      player: document.getElementById('player'),
+      villain: document.getElementById('villain'),
+      car: document.getElementById('car'),
+      obstacles: document.getElementById('obstacles'),
+      bgLayer: document.getElementById('bgLayer'),
+      ground: document.getElementById('ground'),
+      healthHearts: document.getElementById('healthHearts'),
+      distanceMeter: document.getElementById('distanceMeter'),
+      hudChapter: document.getElementById('hudChapter'),
+      hudObjective: document.getElementById('hudObjective'),
+      sprintBar: document.getElementById('sprintBar'),
+      jumpCounter: document.getElementById('jumpCounter'),
+      chapterNum: document.getElementById('chapterNum'),
+      chapterTitle: document.getElementById('chapterTitle'),
+      chapterDesc: document.getElementById('chapterDesc'),
+      cutsceneText: document.getElementById('cutsceneText')
+    };
+
+    // Event Listeners
+    document.getElementById('startBtn').addEventListener('click', startGame);
+    document.getElementById('controlsBtn').addEventListener('click', () => {
+      elements.controlsModal.classList.remove('hidden');
+    });
+    document.getElementById('closeControls').addEventListener('click', () => {
+      elements.controlsModal.classList.add('hidden');
+    });
+    document.getElementById('retryBtn').addEventListener('click', retryChapter);
+    document.getElementById('menuBtn').addEventListener('click', returnToMenu);
+    document.getElementById('playAgainBtn').addEventListener('click', returnToMenu);
+
+    // Keyboard Events
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !elements.mainMenu.classList.contains('hidden')) {
+        startGame();
+        return;
+      }
+      
+      if (!gameState.isPlaying) return;
+      
+      switch(e.key) {
+        case 'ArrowLeft':
+          gameState.keys.left = true;
+          gameState.facingRight = false;
+          break;
+        case 'ArrowRight':
+          gameState.keys.right = true;
+          gameState.facingRight = true;
+          break;
+        case 'ArrowUp':
+        case ' ':
+          if (gameState.jumpCount < gameState.maxJumps && !gameState.isSliding) {
+            jump();
+          }
+          break;
+        case 'ArrowDown':
+          if (!gameState.isJumping) {
+            gameState.keys.down = true;
+            gameState.isSliding = true;
+          }
+          break;
+        case 'Shift':
+          gameState.keys.shift = true;
+          gameState.isSprinting = true;
+          break;
+      }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      switch(e.key) {
+        case 'ArrowLeft':
+          gameState.keys.left = false;
+          break;
+        case 'ArrowRight':
+          gameState.keys.right = false;
+          break;
+        case 'ArrowDown':
+          gameState.keys.down = false;
+          gameState.isSliding = false;
+          break;
+        case 'Shift':
+          gameState.keys.shift = false;
+          gameState.isSprinting = false;
+          break;
+      }
+    });
+
+    // Game Functions
+    function startGame() {
+      elements.mainMenu.classList.add('hidden');
+      gameState.currentChapter = 0;
+      gameState.health = 3;
+      startChapter(0);
+    }
+
+    function startChapter(chapterIndex) {
+      const chapter = chapters[chapterIndex];
+      if (!chapter) {
+        showVictory();
+        return;
+      }
+
+      // Reset game state
+      gameState.distance = 0;
+      gameState.playerX = 100;
+      gameState.playerY = 0;
+      gameState.velocityY = 0;
+      gameState.isJumping = false;
+      gameState.jumpCount = 0;
+      gameState.isSliding = false;
+      gameState.villainX = -100;
+      gameState.villainSpeed = chapter.villainSpeed;
+      gameState.targetDistance = chapter.targetDistance;
+      gameState.isDriving = chapter.isDriving || false;
+      gameState.obstacles = [];
+      gameState.sprintEnergy = 100;
+      
+      // Update visuals
+      elements.bgLayer.style.background = chapter.bgStyle;
+      elements.ground.style.background = chapter.groundStyle;
+      elements.villain.innerHTML = villainSprites[chapter.villain];
+      
+      // Show/hide car
+      if (gameState.isDriving) {
+        elements.car.classList.remove('hidden');
+        elements.player.classList.add('hidden');
+      } else {
+        elements.car.classList.add('hidden');
+        elements.player.classList.remove('hidden');
+      }
+      
+      // Show chapter overlay
+      elements.chapterNum.textContent = `CHAPTER ${chapter.num}`;
+      elements.chapterTitle.textContent = chapter.title;
+      elements.chapterDesc.textContent = chapter.desc;
+      elements.chapterOverlay.classList.remove('hidden');
+      elements.gameCanvas.classList.add('hidden');
+      
+      setTimeout(() => {
+        elements.chapterOverlay.classList.add('hidden');
+        elements.gameCanvas.classList.remove('hidden');
+        
+        // Update HUD
+        elements.hudChapter.textContent = `Chapter ${chapter.num}`;
+        elements.hudObjective.textContent = chapter.objective;
+        updateHealth();
+        
+        gameState.isPlaying = true;
+        gameLoop();
+      }, 3000);
+    }
+
+    function jump() {
+      gameState.velocityY = gameState.jumpForce;
+      gameState.isJumping = true;
+      gameState.jumpCount++;
+      elements.jumpCounter.textContent = gameState.maxJumps - gameState.jumpCount;
+    }
+
+    function updateHealth() {
+      let hearts = '';
+      for (let i = 0; i < 3; i++) {
+        if (i < gameState.health) {
+          hearts += '<span class="text-red-500 text-2xl heartbeat">❤️</span>';
+        } else {
+          hearts += '<span class="text-gray-600 text-2xl">🖤</span>';
+        }
+      }
+      elements.healthHearts.innerHTML = hearts;
+    }
+
+    function takeDamage() {
+      gameState.health--;
+      updateHealth();
+      
+      // Flash red
+      elements.gameCanvas.style.boxShadow = 'inset 0 0 100px rgba(255,0,0,0.5)';
+      setTimeout(() => {
+        elements.gameCanvas.style.boxShadow = 'none';
+      }, 200);
+      
+      if (gameState.health <= 0) {
+        gameOver();
+      }
+    }
+
+    function gameOver() {
+      gameState.isPlaying = false;
+      elements.gameOver.classList.remove('hidden');
+    }
+
+    function showVictory() {
+      gameState.isPlaying = false;
+      elements.victory.classList.remove('hidden');
+    }
+
+    function retryChapter() {
+      elements.gameOver.classList.add('hidden');
+      gameState.health = 3;
+      startChapter(gameState.currentChapter);
+    }
+
+    function returnToMenu() {
+      elements.gameOver.classList.add('hidden');
+      elements.victory.classList.add('hidden');
+      elements.gameCanvas.classList.add('hidden');
+      elements.mainMenu.classList.remove('hidden');
+    }
+
+    function spawnObstacle() {
+      const chapter = chapters[gameState.currentChapter];
+      if (!chapter.obstacles.length) return;
+      
+      const obstacleTypes = {
+        log: { width: 60, height: 30, color: '#4a3728', bottom: 80 },
+        trap: { width: 40, height: 20, color: '#5a5a5a', bottom: 80 },
+        rock: { width: 50, height: 40, color: '#6a6a6a', bottom: 80 },
+        pipe: { width: 80, height: 50, color: '#3a4a3a', bottom: 80 },
+        water: { width: 100, height: 15, color: '#2a4a5a', bottom: 80 },
+        debris: { width: 45, height: 35, color: '#5a4a3a', bottom: 80 },
+        furniture: { width: 70, height: 45, color: '#6a5a4a', bottom: 80 },
+        door: { width: 30, height: 80, color: '#4a3a2a', bottom: 80 },
+        glass: { width: 40, height: 40, color: '#8af', bottom: 80 },
+        fire: { width: 50, height: 60, color: '#f50', bottom: 80 },
+        claw: { width: 30, height: 50, color: '#888', bottom: 120 },
+        dream: { width: 80, height: 80, color: '#606', bottom: 80 },
+        mailbox: { width: 25, height: 50, color: '#444', bottom: 80 },
+        fence: { width: 15, height: 60, color: '#543', bottom: 80 },
+        car: { width: 80, height: 40, color: '#333', bottom: 80 },
+        barrier: { width: 50, height: 35, color: '#f70', bottom: 80 }
+      };
+      
+      const type = chapter.obstacles[Math.floor(Math.random() * chapter.obstacles.length)];
+      const config = obstacleTypes[type] || obstacleTypes.rock;
+      
+      const obstacle = {
+        x: window.innerWidth + 50,
+        ...config,
+        type
+      };
+      
+      gameState.obstacles.push(obstacle);
+      
+      const el = document.createElement('div');
+      el.className = 'absolute rounded';
+      el.style.width = obstacle.width + 'px';
+      el.style.height = obstacle.height + 'px';
+      el.style.backgroundColor = obstacle.color;
+      el.style.bottom = obstacle.bottom + 'px';
+      el.style.left = obstacle.x + 'px';
+      el.dataset.index = gameState.obstacles.length - 1;
+      
+      if (type === 'fire') {
+        el.innerHTML = '<div class="w-full h-full bg-gradient-to-t from-red-600 via-orange-500 to-yellow-400 animate-pulse rounded"></div>';
+      }
+      
+      elements.obstacles.appendChild(el);
+    }
+
+    function updateObstacles() {
+      const speed = gameState.isSprinting && gameState.sprintEnergy > 0 ? gameState.gameSpeed * 1.5 : gameState.gameSpeed;
+      
+      gameState.obstacles.forEach((obs, i) => {
+        obs.x -= speed;
+      });
+      
+      // Update DOM
+      const obsElements = elements.obstacles.children;
+      for (let i = obsElements.length - 1; i >= 0; i--) {
+        const el = obsElements[i];
+        const obs = gameState.obstacles[i];
+        
+        if (!obs || obs.x < -100) {
+          el.remove();
+          gameState.obstacles.splice(i, 1);
+        } else {
+          el.style.left = obs.x + 'px';
+        }
+      }
+    }
+
+    function checkCollisions() {
+      const playerEl = gameState.isDriving ? elements.car : elements.player;
+      const playerRect = {
+        left: gameState.playerX,
+        right: gameState.playerX + (gameState.isDriving ? 128 : 48),
+        top: 80 + gameState.playerY + (gameState.isSliding ? 32 : 0),
+        bottom: 80 + gameState.playerY + (gameState.isSliding ? 16 : (gameState.isDriving ? 60 : 80))
+      };
+      
+      gameState.obstacles.forEach((obs, i) => {
+        const obsRect = {
+          left: obs.x,
+          right: obs.x + obs.width,
+          top: obs.bottom,
+          bottom: obs.bottom + obs.height
+        };
+        
+        // Simple AABB collision
+        if (playerRect.left < obsRect.right &&
+            playerRect.right > obsRect.left &&
+            playerRect.top < obsRect.bottom &&
+            playerRect.bottom > obsRect.top) {
+          
+          // Remove obstacle and take damage
+          gameState.obstacles.splice(i, 1);
+          const el = elements.obstacles.children[i];
+          if (el) el.remove();
+          takeDamage();
+        }
+      });
+      
+      // Villain collision (non-driving chapters)
+      if (!gameState.isDriving && gameState.villainX > gameState.playerX - 30) {
+        takeDamage();
+        gameState.villainX -= 100; // Push villain back
+      }
+    }
+
+    function updatePlayer() {
+      // Horizontal movement
+      const moveSpeed = gameState.isSprinting && gameState.sprintEnergy > 0 ? 8 : 5;
+      
+      if (gameState.keys.left && gameState.playerX > 50) {
+        gameState.playerX -= moveSpeed;
+      }
+      if (gameState.keys.right && gameState.playerX < 200) {
+        gameState.playerX += moveSpeed;
+      }
+      
+      // Gravity and jumping
+      if (!gameState.isDriving) {
+        gameState.velocityY += gameState.gravity;
+        gameState.playerY += gameState.velocityY;
+        
+        if (gameState.playerY >= 0) {
+          gameState.playerY = 0;
+          gameState.velocityY = 0;
+          gameState.isJumping = false;
+          gameState.jumpCount = 0;
+          elements.jumpCounter.textContent = '2';
+        }
+      }
+      
+      // Sprint energy
+      if (gameState.isSprinting && gameState.sprintEnergy > 0) {
+        gameState.sprintEnergy -= 0.5;
+      } else if (!gameState.isSprinting && gameState.sprintEnergy < 100) {
+        gameState.sprintEnergy += 0.2;
+      }
+      elements.sprintBar.style.width = gameState.sprintEnergy + '%';
+      
+      // Update player position
+      const playerEl = gameState.isDriving ? elements.car : elements.player;
+      playerEl.style.left = gameState.playerX + 'px';
+      playerEl.style.bottom = (80 + gameState.playerY) + 'px';
+      
+      // Sliding visual
+      if (gameState.isSliding) {
+        elements.player.style.transform = 'scaleY(0.5) translateY(50%)';
+      } else {
+        elements.player.style.transform = gameState.facingRight ? 'scaleX(1)' : 'scaleX(-1)';
+      }
+    }
+
+    function updateVillain() {
+      const chapter = chapters[gameState.currentChapter];
+      
+      if (chapter.isDriving && chapter.num === 2) {
+        // In revenge chapter, villain is ahead
+        if (gameState.villainX < 0) {
+          gameState.villainX = window.innerWidth - 100;
+        }
+        gameState.villainX -= gameState.gameSpeed * 0.5;
+        
+        // Check if car hit villain
+        if (Math.abs(gameState.playerX + 64 - gameState.villainX) < 50) {
+          // Hit! Move to next chapter
+          gameState.isPlaying = false;
+          showCutscene("You ran him over! Time to get out of here...", () => {
+            gameState.currentChapter++;
+            startChapter(gameState.currentChapter);
+          });
+          return;
+        }
+      } else if (!chapter.isDriving) {
+        // Normal chase
+        gameState.villainX += gameState.villainSpeed;
+      }
+      
+      elements.villain.style.left = gameState.villainX + 'px';
+    }
+
+    function showCutscene(text, callback) {
+      elements.cutsceneText.textContent = text;
+      elements.cutscene.classList.remove('hidden');
+      
+      setTimeout(() => {
+        elements.cutscene.classList.add('hidden');
+        if (callback) callback();
+      }, 3000);
+    }
+
+    let lastObstacleSpawn = 0;
+    let animationId = null;
+
+    function gameLoop() {
+      if (!gameState.isPlaying) return;
+      
+      const chapter = chapters[gameState.currentChapter];
+      
+      // Update distance
+      const speed = gameState.isSprinting && gameState.sprintEnergy > 0 ? gameState.gameSpeed * 1.5 : gameState.gameSpeed;
+      gameState.distance += speed * 0.1;
+      elements.distanceMeter.textContent = Math.floor(gameState.distance);
+      
+      // Check chapter completion
+      if (gameState.distance >= gameState.targetDistance) {
+        gameState.isPlaying = false;
+        
+        if (chapter.cutsceneAfter) {
+          showCutscene("As you step out of the car... HONK HONK! A clown appears from nowhere!", () => {
+            showCutscene("Everything goes black...", () => {
+              gameState.currentChapter++;
+              startChapter(gameState.currentChapter);
+            });
+          });
+        } else if (chapter.isFinal) {
+          showVictory();
+        } else {
+          gameState.currentChapter++;
+          startChapter(gameState.currentChapter);
+        }
+        return;
+      }
+      
+      // Spawn obstacles
+      const now = Date.now();
+      if (now - lastObstacleSpawn > (2000 - Math.min(gameState.distance * 2, 1500))) {
+        spawnObstacle();
+        lastObstacleSpawn = now;
+      }
+      
+      // Update game elements
+      updatePlayer();
+      updateVillain();
+      updateObstacles();
+      checkCollisions();
+      
+      animationId = requestAnimationFrame(gameLoop);
+    }
+
+    // Initialize
+    console.log('Horror Escape: Final Nightmare loaded!');
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9cd8210c6353b213',t:'MTc3MTAyNTU4OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
